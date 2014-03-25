@@ -69,6 +69,32 @@ int interpolate2(int n, float *x, float *y, int m, float *s, float *r) //O(m*log
 }
 //////////////////
 
+int interpolate3(int n, float *x, float *y, int m, float *s, float *r) //O(m*log(n))
+{
+	for (int i=0; i<m; i++)
+	{
+		int begin = 0;
+		int end = n;
+		
+		while (end-begin>1)
+		{
+			int average = (begin+end)/2;
+			if (s[i] < x[average]) end = average;
+			else begin = average;
+		}
+
+		int currentN = begin;
+
+		float a = (y[currentN+1]-y[currentN]) / (x[currentN+1]-x[currentN]);
+		float b = (y[currentN] - a*x[currentN]);
+
+		r[i] = a*s[i]+b;
+	}
+
+	return 0;
+}
+///////////////
+
 void main()
 {
 	int numberOfPoints = 10;
@@ -87,7 +113,7 @@ void main()
 	s[0] = 4.0f; s[1] = 6.0f; s[2] = 3.0f; s[3] = 8.0f; s[4] = 7.5f;
 	float *r = new float[numberOfValues];
 
-	interpolate2(numberOfPoints, x, y, numberOfValues, s, r);
+	interpolate3(numberOfPoints, x, y, numberOfValues, s, r);
 
 	for (int i=0; i<numberOfValues; i++)
 	{

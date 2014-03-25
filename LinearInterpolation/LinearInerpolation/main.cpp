@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <xmmintrin.h>
+#include <emmintrin.h>
 
 //////////////////
 struct floatWithNumber
@@ -95,6 +97,52 @@ int interpolate3(int n, float *x, float *y, int m, float *s, float *r) //O(m*log
 }
 ///////////////
 
+int interpolate4(int n, float *x, float *y, int m, float *s, float *r) //O(m*log(n))
+{
+	for (int i=0; i<m; i+=4)
+	{
+		int begin[4];
+		for (int j=0;j<4;j++) begin[j] = 0;
+
+		int end[4];
+		for (int j=0;j<4;j++) end[j] = n;
+		
+		for (int j=0;j<4;j++) 
+		{
+			int average[4];
+			while (end-begin>1)
+			{
+				average[j] = (begin[j]+end[j])/2;
+				if (s[i] < x[average[j]]) end[j] = average[j];
+				else begin[j] = average[j];
+			}
+		}
+
+		int currentN[4];
+		for (int j=0;j<4;j++) currentN[j] = begin[j];
+
+		float a[4];
+		float b[4];
+		for (int j=0;j<4;j++)
+		{
+			a[j] = (y[currentN[j]+1]-y[currentN[j]]) / (x[currentN[j]+1]-x[currentN[j]]);
+			b[j] = (y[currentN[j]] - a[j]*x[currentN[j]]);
+		}
+
+		__m128 m1;
+		__m128* pSrc1 = (__m128*)a;
+		__m128* pSrc2 = (__m128*)b;
+		__m128* pSrc3 = (__m128*)(s+i);
+		__m128* pDest = (__m128*)(r+i);
+
+		
+		m1 = _mm_mul_ps(*pSrc1, *pSrc3);
+		*pDest = _mm_add_ps(m1, *pSrc2);
+	}
+
+	return 0;
+}
+
 void main()
 {
 	int numberOfPoints = 10;
@@ -108,12 +156,13 @@ void main()
 		y[i] = 2*x[i];
 	}
 
-	int numberOfValues = 5;
+	int numberOfValues = 8;
 	float *s = new float[numberOfValues];
-	s[0] = 4.0f; s[1] = 6.0f; s[2] = 3.0f; s[3] = 8.0f; s[4] = 7.5f;
+	s[0] = 4.0f; s[1] = 6.0f; s[2] = 3.0f; s[3] = 7.5f;
+	s[4] = 4.5f; s[5] = 6.5f; s[6] = 3.5f; s[7] = 7.0f;
 	float *r = new float[numberOfValues];
 
-	interpolate3(numberOfPoints, x, y, numberOfValues, s, r);
+	interpolate4(numberOfPoints, x, y, numberOfValues, s, r);
 
 	for (int i=0; i<numberOfValues; i++)
 	{
